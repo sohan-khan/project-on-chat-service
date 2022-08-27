@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,Initial-scale=1.0"/>
+    <title>Chat Service</title>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/socket.io.min.js"></script>
+    <style type="text/css">
+        #wrap {
+            margin: 25px auto;
+            width: 60%;
+            border: 1px solid silver;
+            padding: 30px;
+            background-color: #dbcece;
+            align-content: center;
+            border-radius: 10px;
+            min-height: 400px;
+	background-image: url(wall.webp);
+	text-align:center;
+		color:white;
+        }
+
+        img {
+            width: 400px;
+            height: 250px;
+        }
+
+        h1 {
+            font-family: Times New Roman;
+            font-size: 30pt;
+            text-align: center;
+        }
+
+        #txtName{
+        	border-radius: 15px;
+        	margin-left: 320px;
+        	margin-top: 30px;
+        	height: 30px;
+        	text-align: center;
+        }
+
+        #btnSend{
+        	margin-left: 370px;
+        	margin-top: 40px;
+        	border-radius: 15px;
+        	height: 30px;
+        	text-align: center;
+        }
+
+        @media screen and (max-width:300px) {
+            #txtName{
+                display:block;
+                float:none;
+            }
+            #btnSend{
+                width:90%;
+            }
+        }
+    </style>
+    <script>
+        var socket;
+
+        $(function () {
+            socket = io.connect('http://localhost:8080');
+            $('#btnSend').click(userInformation);
+            $('#btnChat').click(chatMessages);
+            $('#txtName').keypress(processEnterPress);
+            $('#txtName').focus();
+
+            socket.on('greetings', function (greet) {
+                $('#msg').html(greet);
+                setTimeout(function () {
+                    $('#msg').fadeOut(3000);
+                }, 5000);
+
+            })
+            socket.on('updateChat', function (user, messages) {
+                $('#chat').append('<b>' + user + ': </b>' + messages + '<br/>');
+            })
+            //upload Picture
+            socket.on('addimage', function (user, myImage, myFile) {
+                $('#images').append('<br/><b>' + user + ': </b>' + '<a target="_blank" href="' + myImage + '"><img width="200" height="200" style="border-radius:10px" src="' + myImage + '" /></a>');
+            })
+            $(function () {
+                $('#btnImageFile').on('change', function (e) {
+                    var file = e.originalEvent.target.files[0];
+                    var reader = new FileReader();
+                    reader.onload = function (evt) {
+                        socket.emit('userImage', evt.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                })
+            })
+        })
+        function userInformation() {
+            var user = $('#txtName').val();
+            if (user == '') {
+                alert('Name cannot be left blank');
+                $('#txtName').focus();
+                return;
+            }
+            socket.emit('user', user);
+            $('#txtName').val('');
+            $('#btnChat').show();
+            $('#btnImageFile').show();
+            $('#btnSend').hide();
+            $("#txtName").attr("placeholder", "Write your message here.");
+            $('#txtName').focus();
+        }
+        function chatMessages() {
+            socket.emit('chatSMS', $('#txtName').val());
+            $('#txtName').val('');
+            $('#txtName').focus();
+        }
+        function processEnterPress(e) {
+            if (e.which == 13) {
+                e.preventDefault();
+                $(this).blur();
+                var confrm = $("#txtName").attr("placeholder");
+                if (confrm == 'Enter your name') {
+                    $('#btnSend').focus().click();
+                }
+                else {
+                    $('#btnChat').focus().click();
+                }
+
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class='container' id='wrap'>
+        <h1><b>Welcome to Chat Service!!!</b> </h1>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <label></label>
+                <div id='msg'></div>
+            </div>
+            <div class="form-group">
+                <label></label>
+                <div id='chat'></div>
+                <div id='images'></div>
+            </div>
+            <div class="form-group">
+                <label></label>
+                <div>
+                    <input class="form-control" id="txtName" placeholder="Enter your name please">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div>
+                    <button type="button" id='btnSend'>Join Chat</button>
+                    <button type="button" id='btnChat' style='display:none'>Send</button>
+
+                    <label id='btnImageFile' style='display:none'>
+                        Add Files <input type="file" style="display: none;">
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>
+
+
+
